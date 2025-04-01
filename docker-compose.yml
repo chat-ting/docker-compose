@@ -1,0 +1,49 @@
+# version: '3.8'
+
+services:
+  db-postgres-chatting:
+    image: postgres:13
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - TZ=UTC
+    volumes:
+      - db-postgres-chatting-data:/var/lib/postgresql/data
+      - ./db-postgres-chatting/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - chatting-network  # 변경됨: 네트워크 추가
+
+  chat-ting-member:
+    build: ./member
+    env_file:
+      - .env
+    expose:
+      - "8767"  # 변경됨: Traefik을 통한 내부 노출
+    depends_on:
+      - db-postgres-chatting
+    environment:
+      - SPRING_PROFILE_ACTIVE=prod
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+      - KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}
+      - KAKAO_LOGOUT_REDIRECT_URI=${KAKAO_LOGOUT_REDIRECT_URI}
+      - POSTGRES_DB_HOST=db-postgres-chatting
+      - POSTGRES_DB_NAME=${POSTGRES_DB}
+      - POSTGRES_DB_PORT=${POSTGRES_DB_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}  # 추가
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # 추가
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_BOOTSTRAP_SERVERS_PORT=${KAFKA_BOOTSTRAP_SERVERS_PORT}
+    networks:
+      - chatting-network  # 변경됨: 네트워크 추가
+
+networks:
+  chatting-network:  # 변경됨: 명시적인 네트워크 추가
+    driver: bridge
+
+volumes:
+  db-postgres-chatting-data:
